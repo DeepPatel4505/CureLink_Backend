@@ -1,3 +1,4 @@
+import "../config/config.js"
 import bcrypt from "bcrypt";
 import { Patient } from "../models/Patient.js";
 import { sendCookie, destroyCookie } from "../utils/cookie.js";

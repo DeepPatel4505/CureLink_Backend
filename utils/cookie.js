@@ -1,3 +1,4 @@
+import "../config/config.js"
 import jwt from 'jsonwebtoken'
 
 
