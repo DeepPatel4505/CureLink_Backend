@@ -1,0 +1,44 @@
+import { Schema, model } from "mongoose";
+
+const userSchema = Schema(
+    {
+        googleId: {
+            type: String,
+            unique: true,
+            sparse: true,
+        },
+        username: {
+            type: String,
+            required: true,
+            unique: true,
+        },
+        email: {
+            type: String,
+            required: true,
+            unique: true,
+        },
+        password: {
+            type: String,
+            required: function () {
+                return !this.googleId; // If googleId is absent, password is required
+            },
+            // select: false,   
+        },
+        role: {
+            type: String,
+            enum: ["patient", "clinic_admin", "doctor"],
+            required: true,
+            default: "patient",
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now(),
+        },
+    },
+    {
+        timestamps: true,
+        discriminatorKey: "role",
+    }
+);
+
+export const User = model("User", userSchema);
