@@ -18,7 +18,7 @@ export const send_otp = async (req, res) => {
     res.json({ message: "OTP sent to email" });
 };
 
-export const verify_otp = (req, res) => {
+export const verify_otp = (req, res, next) => {
     const { otp } = req.body;
 
     if (!otp) return res.status(400).json({ error: "OTP is required!" });

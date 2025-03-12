@@ -8,10 +8,12 @@ import passport from "passport";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import verifyRoutes from "./routes/verifyRoutes.js";
+import appointmentRoutes from "./routes/appointmentRoutes.js";
 
 import errorMiddleware from "./middleware/error.js";
 import { isAuthenticated } from "./middleware/auth.js";
 import { connectPassport } from "./utils/googleAuthProvider.js";
+import { seedData } from "./utils/seeder.js";
 
 const app = express();
 
@@ -41,6 +43,7 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 connectPassport();
+seedData()
 
 app.get("/", (req, res) => {
     return res.json({ msg: "Done" }); // Fix: use res.json() to send a response
@@ -52,6 +55,8 @@ app.get("/", (req, res) => {
 app.use("/api/v1/verify", verifyRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/user", isAuthenticated, userRoutes);
+app.use("/api/v1/appointments", isAuthenticated, appointmentRoutes);
+
 
 //Error Handler
 app.use(errorMiddleware);

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import User from "./User";
-import Appointment from "./Appointment";
+import User from "./User.js";
+import Appointment from "./Appointment.js";
 
 const clinicAdminSchema = new mongoose.Schema({
     clinicName: { type: String, required: true },

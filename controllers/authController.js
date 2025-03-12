@@ -1,6 +1,7 @@
 import "../config/config.js"
 import bcrypt from "bcrypt";
 import { Patient } from "../models/Patient.js";
+import User from "../models/User.js";
 import { sendCookie, destroyCookie } from "../utils/cookie.js";
 import Errorhandler from "../utils/errorhandler.js";
 import respond from "../utils/jsonresponse.js";
@@ -33,14 +34,15 @@ export const login = async (req, res, next) => {
         return next(new Errorhandler("Email and password are required.", 400));
     }
     try {
-        let user = await Patient.findOne({ email }).select("+password");
+        let user = await User.findOne({ email }).select("+password");
         if (!user) return next(new Errorhandler("User not found.", 404));
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return next(new Errorhandler("Invalid password", 400));
 
         const token = sendCookie(user, res);
-        respond(res, 200, "Logged In successfully", token);
+        const role = user.role;
+        respond(res, 200, "Logged In successfully", {token,role});
     } catch (err) {
         next(err);
     }

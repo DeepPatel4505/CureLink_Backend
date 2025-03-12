@@ -1,5 +1,6 @@
+// models/Patient.js
+import User from "./User.js";
 import mongoose from "mongoose";
-import { User } from "./User.js";
 
 const patientSchema = new mongoose.Schema({
     phone: { type: String, default: null },
@@ -7,4 +8,6 @@ const patientSchema = new mongoose.Schema({
     medicalHistory: { type: [String], default: [] },
 });
 
-export const Patient = User.discriminator("patient", patientSchema);
+// Export both models
+export const Patient = User.discriminator("Patient", patientSchema); // Capitalize discriminator name
+export { User };

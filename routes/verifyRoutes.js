@@ -11,6 +11,6 @@ router.get("/sendotpcheck",(req,res)=> {
     })
 })
 router.post("/sendotp", send_otp);
-router.post("/otp", verify_otp);
+router.post("/checkotp", verify_otp);
 
 export default router;

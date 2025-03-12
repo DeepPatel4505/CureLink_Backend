@@ -22,7 +22,6 @@ const userSchema = Schema(
             required: function () {
                 return !this.googleId; // If googleId is absent, password is required
             },
-            // select: false,   
         },
         role: {
             type: String,
@@ -41,4 +40,5 @@ const userSchema = Schema(
     }
 );
 
-export const User = model("User", userSchema);
+const User = model("User", userSchema);
+export default User

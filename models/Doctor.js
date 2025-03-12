@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import User from './User';
+import User from './User.js';
 
 const doctorSchema = new mongoose.Schema({
     specialization: { type: String, required: true },

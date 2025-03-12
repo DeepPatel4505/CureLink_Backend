@@ -1,10 +1,9 @@
 import "../config/config.js"
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import  jwt  from "jsonwebtoken";
-import { User } from "../models/User.js";
+import User  from "../models/User.js";
 import { Patient } from "../models/Patient.js";
-import { sendCookie } from "./cookie.js";
+
 
 export const connectPassport = () => {
     passport.use(
