@@ -9,14 +9,25 @@ import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import verifyRoutes from "./routes/verifyRoutes.js";
 import appointmentRoutes from "./routes/appointmentRoutes.js";
+import prescriptionRoutes from "./routes/prescriptionRoutes.js";
 
 import errorMiddleware from "./middleware/error.js";
 import { isAuthenticated } from "./middleware/auth.js";
 import { connectPassport } from "./utils/googleAuthProvider.js";
 import { seedData } from "./utils/seeder.js";
 
+import { scheduleCaseClosure } from "./utils/caseClosure.js";
+import Counter from "./models/Counter.js";
+
 const app = express();
 
+// Initialize the counter at server startup
+async function initialize() {
+    await Counter.initializeCounter();
+    console.log("Counter initialized.");
+}
+
+initialize().catch(console.error);
 
 
 app.use(urlencoded({ extended: false }));
@@ -56,9 +67,13 @@ app.use("/api/v1/verify", verifyRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/user", isAuthenticated, userRoutes);
 app.use("/api/v1/appointments", isAuthenticated, appointmentRoutes);
+app.use("/api/v1/prescription", isAuthenticated, prescriptionRoutes);
 
 
 //Error Handler
 app.use(errorMiddleware);
+
+// Schedule background jobs
+scheduleCaseClosure();
 
 export default app;

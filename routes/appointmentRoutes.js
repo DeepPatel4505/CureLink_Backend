@@ -1,28 +1,32 @@
 import express from "express";
 import {
     bookAppointment,
-    approveAppointment,
-    rejectAppointment,
-    updateAppointment,
-    todaysAppointment,
     userAppointment,
-    consultAppointment,
-    getAppointmentHistory,
     getAllApointments,
-    getAllConsultedAppointments
+    cancelAppointment,
+    getConsultedAppointments,
+    rescheduleAppointment,
+    approveAppointment,
+    consultAppointment,
+    todaysAppointment
 } from "../controllers/appointmentController.js";
 
 const router = express.Router();
 
 // Routes
+
+//user
 router.get("/user/:id",userAppointment);
-router.get("/all",getAllApointments);
-router.get("/history/:userId", getAppointmentHistory);
-router.get("/history/all",getAllConsultedAppointments);
 router.post("/book", bookAppointment);
+router.post("/cancel", cancelAppointment);
+router.get("/consulted/:userId", getConsultedAppointments);
+router.post("/reschedule", rescheduleAppointment);
+
+// //receptionist
+router.get("/all",getAllApointments);
 router.post("/approve", approveAppointment);
-router.post("/reject", rejectAppointment);
-router.post("/update", updateAppointment);
-router.post("/today", todaysAppointment);
 router.post("/consult", consultAppointment);
+
+// //doctor
+router.get("/today", todaysAppointment);
 export default router;

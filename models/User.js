@@ -25,7 +25,7 @@ const userSchema = Schema(
         },
         role: {
             type: String,
-            enum: ["patient", "clinic_admin", "doctor"],
+            enum: ["patient", "receptionist", "doctor", "admin"],
             required: true,
             default: "patient",
         },
@@ -33,6 +33,10 @@ const userSchema = Schema(
             type: Date,
             default: Date.now(),
         },
+        is_active:{
+            type : Boolean,
+            default : true
+        }
     },
     {
         timestamps: true,

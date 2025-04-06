@@ -1,24 +1,22 @@
-import ClinicAdmin from "../models/ClinicAdmin.js";
+import Receptionist from "../models/Receptionist.js"
 import Doctor from "../models/Doctor.js";
 import bcrypt from "bcrypt";
 
 export const seedReceptionist = async () => {
     try {
-        const existingReceptionist = await ClinicAdmin.findOne({ email: "receptionist@curelink.com" });
+        const existingReceptionist = await Receptionist.findOne({ email: "receptionist@curelink.com" });
         if (existingReceptionist) {
             console.log("Receptionist already exists");
             return;
         }
 
         const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash("securepassword", salt);
-        const receptionist = new ClinicAdmin({
+        const hashedPassword = await bcrypt.hash("123", salt);
+        const receptionist = new Receptionist({
             username: "receptionist1",
             email: "receptionist@curelink.com",
             password: hashedPassword,
-            role: "clinic_admin",
-            clinicName: "My Clinic",
-            clinicAddress: "123 Main St, Cityville",
+            phone: 1234567890,
         });
 
         await receptionist.save();
@@ -42,7 +40,6 @@ export const seedDoctor = async () => {
             username: "doctor1",
             email: "doctor@curelink.com",
             password: hashedPassword,
-            role: "doctor",
             specialization: "Cardiology",
             licenseNumber: "DOC12345",
             experience: 10,

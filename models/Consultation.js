@@ -1,7 +1,12 @@
 import mongoose from "mongoose";
 
-const prescriptionSchema = new mongoose.Schema(
+const consultationSchema = new mongoose.Schema(
     {
+        case: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Case",
+            required: true,
+        },
         appointment: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Appointment",
@@ -20,19 +25,20 @@ const prescriptionSchema = new mongoose.Schema(
         receptionist: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Receptionist",
-            required: true,
         },
-        imageUrl: {
-            type: String,
-            required: true,
+        date: {
+            type: Date,
+            default: Date.now,
         },
-        fileName: {
+        diagnosis: {
             type: String,
-            default: null, // Optional, helpful for UI/file management
         },
-        contentType: {
+        prescription: {
             type: String,
-            default: "image/png", // or "application/pdf" if allowed
+        },
+        follow_up: {
+            type: Boolean,
+            default: false,
         },
         notes: {
             type: String,
@@ -40,9 +46,9 @@ const prescriptionSchema = new mongoose.Schema(
         },
     },
     {
-        timestamps: true,
+        timestamps: { createdAt: "created_at", updatedAt: false },
     }
 );
 
-const Prescription = mongoose.model("Prescription", prescriptionSchema);
-export default Prescription;
+const Consultation = mongoose.model("Consultation", consultationSchema);
+export default Consultation;
