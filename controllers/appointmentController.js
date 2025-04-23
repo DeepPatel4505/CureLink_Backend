@@ -65,8 +65,7 @@ export const bookAppointment = async (req, res, next) => {
                 status: "open",
             });
         }
-        
-        
+
         // Create appointment
         const appointment = new Appointment({
             patient: user._id,
@@ -78,23 +77,22 @@ export const bookAppointment = async (req, res, next) => {
             case: patientCase._id,
             status: "pending",
         });
-        
-        
+
         // Update case with appointment reference
         patientCase.appointment_ids.push(appointment._id);
         if (!patientCase.created_from_appointment_id) {
             patientCase.created_from_appointment_id = appointment._id;
         }
-        
+
         // console.log(patientCase);
         // console.log("About to save case...");
         // console.log("Saving new case:", patientCase.isNew); // should be true for new case
-        
+
         // console.log("Before saving, case_number is:", patientCase.case_number);
         await patientCase.save();
         // console.log("Case saved...");
         await appointment.save();
-        
+
         respond(res, 201, "Appointment booked successfully", {
             appointment,
             case: patientCase,
@@ -135,13 +133,14 @@ export const userAppointment = async (req, res, next) => {
     }
 };
 
-
 export const cancelAppointment = async (req, res, next) => {
     try {
-        const { appointmentId, cancel_reason  } = req.body;
+        const { appointmentId, cancel_reason } = req.body;
 
         if (!appointmentId) {
-            return res.status(400).json({ error: "Appointment ID is required" });
+            return res
+                .status(400)
+                .json({ error: "Appointment ID is required" });
         }
 
         const appointment = await Appointment.findById(appointmentId);
@@ -151,7 +150,9 @@ export const cancelAppointment = async (req, res, next) => {
         }
 
         if (appointment.status === "cancelled") {
-            return res.status(400).json({ error: "Appointment is already cancelled" });
+            return res
+                .status(400)
+                .json({ error: "Appointment is already cancelled" });
         }
 
         // Optional: Check user permission if needed
@@ -163,13 +164,12 @@ export const cancelAppointment = async (req, res, next) => {
         appointment.cancelDate = new Date(); // If you track this
         await appointment.save();
 
-
         // Optional: update the Case if needed
         if (appointment.case) {
             await Case.findByIdAndUpdate(appointment.case, {
                 $set: {
                     closed_at: new Date(),
-                    is_active : false,
+                    is_active: false,
                     cancel_reason: cancel_reason || "Appointment cancelled",
                     status: "void", // Or handle however you need
                 },
@@ -195,11 +195,11 @@ export const getConsultedAppointments = async (req, res, next) => {
             return res.status(400).json({ error: "User ID is required" });
         }
 
-        const appointments = await Appointment.find({
+        const appointments = await Consultation.find({
             patient: userId,
-            status: "consulted",
         })
-            .populate("doctor")
+            .populate("appointment")
+            .populate("patient")
             .populate("case");
 
         res.status(200).json({
@@ -228,11 +228,15 @@ export const rescheduleAppointment = async (req, res, next) => {
         }
 
         if (appointment.patient.toString() !== userId.toString()) {
-            return res.status(403).json({ error: "Unauthorized to reschedule this appointment" });
+            return res
+                .status(403)
+                .json({ error: "Unauthorized to reschedule this appointment" });
         }
 
         if (appointment.status === "cancelled") {
-            return res.status(400).json({ error: "Cannot reschedule a cancelled appointment" });
+            return res
+                .status(400)
+                .json({ error: "Cannot reschedule a cancelled appointment" });
         }
 
         appointment.appointmentDate = new Date(newDate);
@@ -250,7 +254,6 @@ export const rescheduleAppointment = async (req, res, next) => {
     }
 };
 
-
 export const approveAppointment = async (req, res, next) => {
     try {
         const { appointmentId } = req.body;
@@ -265,7 +268,7 @@ export const approveAppointment = async (req, res, next) => {
         }
 
         appointment.status = "confirmed";
-        appointment.confirmDate = new Date()
+        appointment.confirmDate = new Date();
         await appointment.save();
 
         respond(res, 200, "Appointment approved successfully", appointment);
@@ -278,7 +281,9 @@ export const approveAppointment = async (req, res, next) => {
 export const getAllApointments = async (req, res, next) => {
     try {
         const { status } = req.query;
-        const appointments = await Appointment.find({ status });
+        const appointments = await Appointment.find({ status }).populate(
+            "patient"
+        );
         res.status(200).json({
             success: true,
             data: appointments,
@@ -296,6 +301,7 @@ export const consultAppointment = async (req, res, next) => {
             req.body;
 
         const appointment = await Appointment.findById(appointmentId);
+
         if (!appointment) {
             return next(new Errorhandler("Appointment not found", 404));
         }
@@ -309,6 +315,19 @@ export const consultAppointment = async (req, res, next) => {
             );
         }
 
+        // Create and save the prescription
+        const prescription = new Prescription({
+            appointment: appointment._id,
+            patient: appointment.patient,
+            doctor: appointment.doctor,
+            receptionist: appointment.receptionist,
+            imageUrl: prescriptionImage,
+            notes,
+        });
+
+        await prescription.save();
+
+        // Create and save the consultation
         const consultation = new Consultation({
             case: appointment.case,
             appointment: appointment._id,
@@ -316,22 +335,36 @@ export const consultAppointment = async (req, res, next) => {
             doctor: appointment.doctor,
             receptionist: appointment.receptionist,
             diagnosis,
-            prescription: prescriptionImage,
+            prescription: prescription._id,
             follow_up: followUp || false,
             notes,
         });
 
-        // Save the consultation
         await consultation.save();
 
-        // Optionally, you can delete the original appointment or mark it as "consulted"
+        // Update appointment status
         appointment.status = "consulted";
         await appointment.save();
-        // Respond with the newly created consultation entry
-        respond(res, 200, "Appointment marked as consulted", consultation);
+
+        // Populate related fields before responding
+        const populatedConsultation = await Consultation.findById(
+            consultation._id
+        )
+            .populate("patient")
+            .populate("doctor")
+            .populate("prescription")
+            .populate("case")
+            .populate("receptionist");
+
+        return respond(
+            res,
+            200,
+            "Appointment marked as consulted",
+            populatedConsultation
+        );
     } catch (error) {
         console.error("Error marking appointment as consulted:", error);
-        next(new Errorhandler("Internal server error", 500));
+        return next(new Errorhandler("Internal server error", 500));
     }
 };
 
@@ -340,7 +373,9 @@ export const todaysAppointment = async (req, res, next) => {
         const doctorId = "67f1121870bd6e54238224c3";
 
         if (!doctorId) {
-            return res.status(401).json({ success: false, message: "Unauthorized" });
+            return res
+                .status(401)
+                .json({ success: false, message: "Unauthorized" });
         }
 
         const startOfDay = new Date();
@@ -351,6 +386,7 @@ export const todaysAppointment = async (req, res, next) => {
 
         const appointments = await Appointment.find({
             doctor: doctorId,
+            status: "pending",
             appointmentDate: {
                 $gte: startOfDay,
                 $lte: endOfDay,
@@ -367,5 +403,39 @@ export const todaysAppointment = async (req, res, next) => {
     } catch (error) {
         console.error("Error fetching today's appointments for doctor:", error);
         next(error);
+    }
+};
+
+export const getAppointmentsByDate = async (req, res, next) => {
+    try {
+        const { date } = req.params;
+        const doctorId = req.user?._id || "67f1121870bd6e54238224c3";
+
+        if (!date) {
+            return next(new Errorhandler("Date is required", 400));
+        }
+
+        const startDate = new Date(date);
+        startDate.setHours(0, 0, 0, 0);
+
+        const endDate = new Date(date);
+        endDate.setHours(23, 59, 59, 999);
+
+        const appointments = await Appointment.find({
+            doctor: doctorId,
+            status: "pending",
+            appointmentDate: {
+                $gte: startDate,
+                $lte: endDate,
+            },
+        })
+            .populate("patient")
+            .populate("case")
+            .sort({ timeSlot: 1 });
+
+        respond(res, 200, "Appointments fetched successfully", appointments);
+    } catch (error) {
+        console.error("Error fetching appointments by date:", error);
+        next(new Errorhandler("Internal Server Error", 500));
     }
 };

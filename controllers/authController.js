@@ -59,7 +59,7 @@ export const logout = async (req, res, next) => {
 
 export const googleCallback = (req, res) => {
     const user = req.user;
-    console.log("Hyy")
+    // console.log("Hyy")
     sendCookie(user,res)
-    res.redirect(`${process.env.FRONTEND_URI}/profile`);
+    res.redirect(`${process.env.FRONTEND_URI}/login-success`);
 };

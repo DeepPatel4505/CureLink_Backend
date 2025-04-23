@@ -8,7 +8,8 @@ import {
     rescheduleAppointment,
     approveAppointment,
     consultAppointment,
-    todaysAppointment
+    todaysAppointment,
+    getAppointmentsByDate
 } from "../controllers/appointmentController.js";
 
 const router = express.Router();
@@ -29,4 +30,5 @@ router.post("/consult", consultAppointment);
 
 // //doctor
 router.get("/today", todaysAppointment);
+router.get("/byDate/:date", getAppointmentsByDate);
 export default router;

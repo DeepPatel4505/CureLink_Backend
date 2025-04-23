@@ -34,7 +34,8 @@ const consultationSchema = new mongoose.Schema(
             type: String,
         },
         prescription: {
-            type: String,
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Prescription",
         },
         follow_up: {
             type: Boolean,

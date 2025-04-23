@@ -1,4 +1,4 @@
-import "../config/config.js"
+import "../config/config.js";
 import express from "express";
 import {
     register,
@@ -7,6 +7,7 @@ import {
     googleCallback,
 } from "../controllers/authController.js";
 import passport from "passport";
+import { isAuthenticated } from "../middleware/auth.js";
 const router = express.Router();
 
 //jwt authentication
@@ -29,5 +30,16 @@ router.get(
     }),
     googleCallback
 );
+
+router.get("/verify-me", isAuthenticated, (req, res) => {
+    // console.log("Res sent");
+    // console.log(req.user);
+    
+    res.status(200).json({
+        authenticated: true,
+        user: req.user,
+    });
+});
+
 
 export default router;

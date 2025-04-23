@@ -22,7 +22,7 @@ router.get("/profile", isAuthenticated, async (req, res) => {
 
 router.put("/profile", isAuthenticated, async (req, res) => {
     try {
-        const { username, email, phone, address, medicalHistory } = req.body;
+        const { username, email, phone, address, medicalHistory,bloodGroup,gender,age } = req.body;
 
         // Find the user by ID (from the authenticated request)
         const user = await Patient.findById(req.user._id);
@@ -36,10 +36,14 @@ router.put("/profile", isAuthenticated, async (req, res) => {
 
         // Update user fields
         user.username = username || user.username;
+        user.age = age || user.age;
         user.email = email || user.email;
         user.phone = phone || user.phone;
         user.address = address || user.address;
         user.medicalHistory = medicalHistory || user.medicalHistory;
+        user.blood_group = bloodGroup || user.blood_group;
+        user.gender = gender.toLowerCase() || user.gender;
+
 
         // Save the updated user
         await user.save();

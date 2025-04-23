@@ -1,25 +1,29 @@
 import multer from "multer";
-import fs from "fs";
-import path from "path";
 
-// Define the absolute path for the upload directory
-const uploadDir = path.join(process.cwd(), "temp");
+// Use simple memory storage without the destination function
+const storage = multer.memoryStorage();
 
-// Ensure the temp directory exists
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.memoryStorage({
-    destination: (req, file, cb) => {
-        console.log("Uploading to:", uploadDir);  // Debugging line
-        cb(null, uploadDir); // Ensure the correct path is passed
+// Add some logging to check what's happening
+const singleUpload = multer({
+    storage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: (req, file, cb) => {
+        console.log("Multer processing file:", file.originalname);
+        cb(null, true);
     },
-    filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${file.originalname}`);
-    }
-});
+}).single("file");
 
-const singleUpload = multer({ storage }).single("file");
-
-export default singleUpload;
+// Wrap the multer middleware to catch errors
+export default function (req, res, next) {
+    singleUpload(req, res, function (err) {
+        if (err) {
+            console.error("Multer error:", err);
+            return res.status(400).json({
+                success: false,
+                message: `File upload error: ${err.message}`,
+            });
+        }
+        console.log("File uploaded to memory successfully");
+        next();
+    });
+}

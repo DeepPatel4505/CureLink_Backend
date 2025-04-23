@@ -20,7 +20,6 @@ const prescriptionSchema = new mongoose.Schema(
         receptionist: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Receptionist",
-            required: true,
         },
         imageUrl: {
             type: String,
