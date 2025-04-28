@@ -1,6 +1,7 @@
 // models/Patient.js
 import User from "./User.js";
 import mongoose from "mongoose";
+import mongoosePaginate from "mongoose-paginate-v2";
 
 const patientSchema = new mongoose.Schema({
     phone: {
@@ -49,5 +50,6 @@ const patientSchema = new mongoose.Schema({
 });
 
 // Export both models
+patientSchema.plugin(mongoosePaginate);
 export const Patient = User.discriminator("Patient", patientSchema);
 export { User };

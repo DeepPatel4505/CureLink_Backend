@@ -4,6 +4,8 @@ import Case from "../models/Case.js";
 import Prescription from "../models/Prescription.js";
 import Errorhandler from "../utils/errorhandler.js";
 import respond from "../utils/jsonresponse.js";
+import Counter from "../models/Counter.js";
+import { sendAppointmentConfirmationEmail } from "../utils/otphandler.js";
 
 // /**
 //  * @desc    Book a new appointment
@@ -53,7 +55,7 @@ export const bookAppointment = async (req, res, next) => {
 
         if (
             latestCase &&
-            isWithin7Days(latestCase.last_appointment_date, appointmentDate)
+            isWithin7Days(latestCase.last_appointment_date, new Date())
         ) {
             patientCase = latestCase;
             patientCase.last_appointment_date = appointmentDate;
@@ -111,24 +113,54 @@ export const userAppointment = async (req, res, next) => {
             return next(new Errorhandler("User ID is required.", 400));
         }
 
-        const filter = { patient: userId };
-        if (status) {
-            filter.status = status;
+        // Ensure status is an array if not already
+        const statusArray = Array.isArray(status) ? status : [status];
+
+        // Fetch all cases associated with the user
+        const cases = await Case.find({ patient: userId })
+            .populate({
+                path: "appointment_ids",
+                populate: {
+                    path: "patient",
+                    select: "username email role",
+                    match: { role: "patient" },
+                },
+            })
+            .sort("-created_at"); // Sort cases by creation date
+
+        // Filter cases to only include those that have appointments with the specified status
+        const filteredCases = cases.filter((caseItem) => {
+            const filteredAppointments = caseItem.appointment_ids.filter(
+                (appointment) => statusArray.includes(appointment.status)
+            );
+
+            // Only include the case if it has at least one matching appointment
+            if (filteredAppointments.length > 0) {
+                // Replace the appointments in the case with the filtered appointments
+                caseItem.appointment_ids = filteredAppointments;
+                return true;
+            }
+
+            return false; // Exclude cases with no matching appointments
+        });
+
+        if (filteredCases.length === 0) {
+            return respond(
+                res,
+                200,
+                "No cases found with the specified appointment status.",
+                []
+            );
         }
 
-        // Make sure to query AppointmentHistory for consulted appointments
-
-        const appointments = await Appointment.find(filter)
-            .populate({
-                path: "patient",
-                select: "username email role",
-                match: { role: "patient" },
-            })
-            .sort("-createdAt");
-
-        respond(res, 200, "Appointments fetched successfully", appointments);
+        respond(
+            res,
+            200,
+            "Cases with appointments fetched successfully",
+            filteredCases
+        );
     } catch (error) {
-        console.error("Error fetching appointments:", error);
+        console.error("Error fetching cases with appointments:", error);
         next(new Errorhandler("Internal server error", 500));
     }
 };
@@ -155,25 +187,81 @@ export const cancelAppointment = async (req, res, next) => {
                 .json({ error: "Appointment is already cancelled" });
         }
 
-        // Optional: Check user permission if needed
-        // if (appointment.patient.toString() !== userId.toString()) {
-        //     return res.status(403).json({ error: "Unauthorized" });
-        // }
+        if (appointment.status === "consulted") {
+            return res.status(400).json({
+                error: "Consulted appointments cannot be cancelled directly.",
+            });
+        }
 
+        // Update appointment fields
         appointment.status = "cancelled";
-        appointment.cancelDate = new Date(); // If you track this
+        appointment.cancelDate = new Date();
+        if (cancel_reason) {
+            appointment.notes = `Cancelled: ${cancel_reason}`;
+        }
         await appointment.save();
 
-        // Optional: update the Case if needed
+        // Update related case
         if (appointment.case) {
-            await Case.findByIdAndUpdate(appointment.case, {
-                $set: {
-                    closed_at: new Date(),
-                    is_active: false,
-                    cancel_reason: cancel_reason || "Appointment cancelled",
-                    status: "void", // Or handle however you need
-                },
-            });
+            const relatedCase = await Case.findById(appointment.case);
+
+            if (relatedCase) {
+                // Remove appointmentId from case's appointment_ids
+                relatedCase.appointment_ids =
+                    relatedCase.appointment_ids.filter(
+                        (id) => id.toString() !== appointmentId.toString()
+                    );
+
+                // If this cancelled appointment was the 'created_from_appointment_id', clear it
+                if (
+                    relatedCase.created_from_appointment_id?.toString() ===
+                    appointmentId.toString()
+                ) {
+                    relatedCase.created_from_appointment_id = null;
+                }
+
+                // Check if case is now empty (no appointments and no consultations)
+                const remainingAppointments = await Appointment.find({
+                    _id: { $in: relatedCase.appointment_ids },
+                    status: { $ne: "cancelled" }, // Only active appointments
+                });
+
+                const remainingConsultations = await Consultation.find({
+                    _id: { $in: relatedCase.consultation_ids },
+                });
+
+                if (
+                    remainingAppointments.length === 0 &&
+                    remainingConsultations.length === 0
+                ) {
+                    // CASE IS EMPTY => Delete it
+                    await Case.deleteOne({ _id: relatedCase._id });
+
+                    // Decrement the Counter
+                    await Counter.findByIdAndUpdate("caseNumber", {
+                        $inc: { seq: -1 },
+                    });
+
+                    console.log(
+                        `Case ${relatedCase.case_number} deleted and counter decremented.`
+                    );
+                } else {
+                    // Case still has activity, update last_appointment_date
+                    if (remainingAppointments.length > 0) {
+                        // Find the latest appointment
+                        const latestAppointment = remainingAppointments.sort(
+                            (a, b) => b.appointmentDate - a.appointmentDate
+                        )[0];
+
+                        relatedCase.last_appointment_date =
+                            latestAppointment.appointmentDate;
+                    } else {
+                        relatedCase.last_appointment_date = null;
+                    }
+
+                    await relatedCase.save();
+                }
+            }
         }
 
         res.status(200).json({
@@ -241,6 +329,7 @@ export const rescheduleAppointment = async (req, res, next) => {
 
         appointment.appointmentDate = new Date(newDate);
         appointment.timeSlot = newTimeSlot;
+        appointment.status = "pending";
         await appointment.save();
 
         res.status(200).json({
@@ -262,7 +351,7 @@ export const approveAppointment = async (req, res, next) => {
             return next(new Errorhandler("Appointment ID is required.", 400));
         }
 
-        const appointment = await Appointment.findById(appointmentId);
+        const appointment = await Appointment.findById(appointmentId).populate("patient");
         if (!appointment) {
             return next(new Errorhandler("Appointment not found.", 404));
         }
@@ -270,6 +359,11 @@ export const approveAppointment = async (req, res, next) => {
         appointment.status = "confirmed";
         appointment.confirmDate = new Date();
         await appointment.save();
+
+         // Send confirmation email
+        if (appointment.patient && appointment.patient.email) {
+            await sendAppointmentConfirmationEmail(appointment.patient.email, appointment);
+        }
 
         respond(res, 200, "Appointment approved successfully", appointment);
     } catch (error) {
@@ -300,12 +394,14 @@ export const consultAppointment = async (req, res, next) => {
         const { appointmentId, prescriptionImage, notes, diagnosis, followUp } =
             req.body;
 
+        // Find the appointment by ID
         const appointment = await Appointment.findById(appointmentId);
 
         if (!appointment) {
             return next(new Errorhandler("Appointment not found", 404));
         }
 
+        // Only confirmed appointments can be consulted
         if (appointment.status !== "confirmed") {
             return next(
                 new Errorhandler(
@@ -342,7 +438,17 @@ export const consultAppointment = async (req, res, next) => {
 
         await consultation.save();
 
-        // Update appointment status
+        // Update the case with the new consultation ID
+        const caseToUpdate = await Case.findById(appointment.case);
+        if (!caseToUpdate) {
+            return next(new Errorhandler("Case not found", 404));
+        }
+
+        // Add the consultation ID to the case's consultations array
+        caseToUpdate.consultation_ids.push(consultation._id);
+        await caseToUpdate.save();
+
+        // Update the appointment status to 'consulted'
         appointment.status = "consulted";
         await appointment.save();
 
@@ -437,5 +543,27 @@ export const getAppointmentsByDate = async (req, res, next) => {
     } catch (error) {
         console.error("Error fetching appointments by date:", error);
         next(new Errorhandler("Internal Server Error", 500));
+    }
+};
+
+export const getSlotCounts = async (req, res, next) => {
+    try {
+        const { date } = req.query;
+        const appointments = await Appointment.find({
+            appointmentDate: date,
+            status: { $nin: ["cancelled", "consulted"] }
+        }); // Exclude cancelled appointments});
+
+        const slotCounts = {};
+        appointments.forEach((appointment) => {
+            slotCounts[appointment.timeSlot] =
+                (slotCounts[appointment.timeSlot] || 0) + 1;
+        });
+        console.log(slotCounts);
+        console.log(`For date  ${date}`);
+
+        res.status(200).json({ slotCounts });
+    } catch (error) {
+        next(new Errorhandler("Failed to fetch slot counts", 500));
     }
 };

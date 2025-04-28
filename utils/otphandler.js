@@ -1,7 +1,7 @@
-import "../config/config.js"
-import nodemailer from "nodemailer"
+import "../config/config.js";
+import nodemailer from "nodemailer";
 
-const transporter = nodemailer.createTransport({
+export const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
         user: process.env.USER,
@@ -12,10 +12,10 @@ const transporter = nodemailer.createTransport({
 // Function to generate a 6-digit OTP
 export const generateOTP = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
-}
+};
 
 // Send OTP Email
-export const sendOTPEmail = async(userEmail, otp)=> {
+export const sendOTPEmail = async (userEmail, otp) => {
     const mailOptions = {
         from: process.env.USER,
         to: userEmail,
@@ -29,5 +29,29 @@ export const sendOTPEmail = async(userEmail, otp)=> {
     } catch (error) {
         console.error("Error sending OTP email:", error);
     }
-}
+};
 
+export const sendAppointmentConfirmationEmail = async (
+    userEmail,
+    appointment
+) => {
+    const mailOptions = {
+        from: process.env.USER,
+        to: userEmail,
+        subject: "Appointment Confirmed!",
+        text: `Hello,
+
+Your appointment for ${appointment.appointmentDate} at ${appointment.timeSlot} has been confirmed.
+
+Thank you for choosing us!
+
+- Clinic Team`,
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log("Appointment confirmation email sent to:", userEmail);
+    } catch (error) {
+        console.error("Error sending confirmation email:", error);
+    }
+};

@@ -27,11 +27,12 @@ export const getPrescription = async (req, res, next) => {
     try {
         const id = req.params.id;
 
-        const consultation = await Consultation.findById(id)
+        let consultation = await Consultation.find({appointment : id})
             .populate("prescription")
             .populate("patient")
             .populate("case");
-
+        consultation = consultation[0];
+        
         if (!consultation) {
             return next(new Errorhandler("Consultation not found", 404));
         }

@@ -45,6 +45,11 @@ const caseSchema = new mongoose.Schema(
             type: Date,
             default: null,
         },
+        closed_by: {
+            type: String,
+            enum: ["doctor", "system"],
+            default: "system",
+        },
         remarks: {
             type: String,
             default: null,
@@ -59,13 +64,11 @@ const caseSchema = new mongoose.Schema(
     }
 );
 
+// Auto-increment case_number on creation
 caseSchema.pre("save", async function (next) {
     if (!this.isNew) return next();
-    console.log(">>> Case pre-save hook triggered");
 
     try {
-        console.log("Pre-save hook running for case...");
-        // Ensure the counter is initialized
         await Counter.initializeCounter();
 
         const counter = await Counter.findByIdAndUpdate(
@@ -73,18 +76,17 @@ caseSchema.pre("save", async function (next) {
             { $inc: { seq: 1 } },
             { new: true, upsert: true }
         );
+
         if (!counter) {
             throw new Error("Counter not found or updated");
         }
+
         this.case_number = counter.seq;
-        console.log("Case number set to:", this.case_number);
         next();
     } catch (err) {
-        console.error("Error in pre-save hook:", err);
         next(err);
     }
 });
-
 
 const Case = mongoose.model("Case", caseSchema);
 export default Case;

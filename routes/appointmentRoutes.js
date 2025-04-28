@@ -9,7 +9,8 @@ import {
     approveAppointment,
     consultAppointment,
     todaysAppointment,
-    getAppointmentsByDate
+    getAppointmentsByDate,
+    getSlotCounts
 } from "../controllers/appointmentController.js";
 
 const router = express.Router();
@@ -21,6 +22,7 @@ router.get("/user/:id",userAppointment);
 router.post("/book", bookAppointment);
 router.post("/cancel", cancelAppointment);
 router.get("/consulted/:userId", getConsultedAppointments);
+router.get("/slotCounts", getSlotCounts);
 router.post("/reschedule", rescheduleAppointment);
 
 // //receptionist

@@ -1,17 +1,21 @@
 import cron from "node-cron";
 import Case from "../models/Case.js";
+import Appointment from "../models/Appointment.js"; // Import Appointment
+import { transporter } from "./otphandler.js"; // your nodemailer transporter
 
-// const CASE_CLOSURE_CRON = "* * * * *"; // Daily at 2 AM
-const CASE_CLOSURE_CRON = "0 2 * * *"; // Daily at 2 AM
+// const DAILY_CRON = "* * * * *"; // every time for testing
+const DAILY_CRON = "0 2 * * *"; // 2 AM every day
 
-export const scheduleCaseClosure = () => {
-    cron.schedule(CASE_CLOSURE_CRON, async () => {
-        // console.log("Case closure cron triggered");
+export const scheduleDailyTasks = () => {
+    cron.schedule(DAILY_CRON, async () => {
+        console.log("Daily cron triggered");
+
         try {
+            // 1. Close old cases
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-            const result = await Case.updateMany(
+            const caseResult = await Case.updateMany(
                 {
                     status: "open",
                     last_appointment_date: { $lte: sevenDaysAgo },
@@ -23,10 +27,52 @@ export const scheduleCaseClosure = () => {
                     },
                 }
             );
+            console.log(`Closed ${caseResult.modifiedCount} cases`);
 
-            console.log(`Closed ${result.modifiedCount} cases`);
+            // 2. Send appointment reminders
+            const now = new Date();
+            const tomorrow = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                now.getDate() + 1
+            );
+            const dayAfter = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                now.getDate() + 2
+            );
+
+            const appointments = await Appointment.find({
+                appointmentDate: { $gte: tomorrow, $lt: dayAfter },
+                status: "confirmed",
+            }).populate("patient");
+
+            // console.log(appointments);
+
+            for (const appointment of appointments) {
+                if (appointment.patient?.email) {
+                    const mailOptions = {
+                        from: process.env.USER,
+                        to: appointment.patient.email,
+                        subject:
+                            "Appointment Reminder - Your Appointment is Tomorrow",
+                        text: `Hello,
+
+This is a reminder that your appointment is scheduled for ${appointment.appointmentDate} at ${appointment.timeSlot}.
+
+Please arrive 10 minutes early.
+
+Thank you!`,
+                    };
+
+                    await transporter.sendMail(mailOptions);
+                    console.log(
+                        `Reminder email sent to: ${appointment.patient.email}`
+                    );
+                }
+            }
         } catch (error) {
-            console.error("Case closure error:", error);
+            console.error("Error in daily tasks:", error);
         }
     });
 };
