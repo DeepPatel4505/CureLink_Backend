@@ -11,7 +11,7 @@ export const seedReceptionist = async () => {
         }
 
         const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash("123", salt);
+        const hashedPassword = await bcrypt.hash("12345678", salt);
         const receptionist = new Receptionist({
             username: "receptionist1",
             email: "receptionist@curelink.com",

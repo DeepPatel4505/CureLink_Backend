@@ -515,7 +515,7 @@ export const todaysAppointment = async (req, res, next) => {
 export const getAppointmentsByDate = async (req, res, next) => {
     try {
         const { date } = req.params;
-        const doctorId = req.user?._id || "67f1121870bd6e54238224c3";
+        const doctorId = "67f1121870bd6e54238224c3";
 
         if (!date) {
             return next(new Errorhandler("Date is required", 400));
@@ -528,8 +528,7 @@ export const getAppointmentsByDate = async (req, res, next) => {
         endDate.setHours(23, 59, 59, 999);
 
         const appointments = await Appointment.find({
-            doctor: doctorId,
-            status: "pending",
+            status: "confirmed",
             appointmentDate: {
                 $gte: startDate,
                 $lte: endDate,
