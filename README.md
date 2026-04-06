@@ -1,72 +1,254 @@
-﻿# CureLink Backend
+﻿# 🏥 CureLink
 
-Backend API for CureLink, built with Node.js, Express, and MongoDB.
+<p align="center">
+  <img src="https://skillicons.dev/icons?i=react,vite,nodejs,express,mongodb,tailwind,cloudinary" />
+</p>
 
-## Stack
+> **A Full-Stack Healthcare Platform for Seamless Patient & Doctor Workflows** 🚀
 
-- Node.js
-- Express
-- MongoDB with Mongoose
-- JWT authentication
-- Passport Google OAuth
-- Nodemailer
-- Cloudinary
-- Node cron
+CureLink is a production-ready healthcare web application designed to streamline **patient onboarding, appointment management, consultations, and prescription workflows**.
 
-## Run Locally
+It combines modern frontend UX with a secure backend architecture to deliver a **scalable, real-world medical platform**.
 
-1. Install dependencies:
+---
 
-   npm install
+## ✨ Core Features
 
-2. Create environment file:
+### 🧑‍⚕️ 1. Patient Management
 
-   Create server/config/.env
+* Secure onboarding & profile management
+* Authentication with **JWT + Google OAuth**
+* Cookie-based session handling
 
-3. Add required variables:
+### 📅 2. Appointment System
 
-- MONGO_DB_URL
-- PORT
-- JWT_SECRET
-- JWT_RESET_SECRET
-- NODE_ENV
-- GOOGLE_CLIENT_ID
-- GOOGLE_CLIENT_SECRET
-- GOOGLE_CALLBACK_URI
-- FRONTEND_URI
-- CLOUD_NAME
-- CLOUD_API_KEY
-- CLOUD_API_SECRET
-- USER
-- APP_PASSWORD
+* Book, manage, and track appointments
+* Structured scheduling workflow
+* Real-time status updates
 
-4. Start development server:
+### 📝 3. Consultation Tracking
 
-   npm run dev
+* Maintain consultation history
+* Structured patient-doctor interactions
+* Persistent records for future reference
 
-## Scripts
+### 💊 4. Prescription Workflow
 
-- npm run dev: start backend using nodemon
+* Digital prescription management
+* Cloud-based storage using **Cloudinary**
+* Easy access & retrieval
 
-## API Overview
+### 📧 5. Notifications & Automation
 
-Base URL:
+* Email notifications via **Nodemailer**
+* Background jobs using **Cron**
+* Automated workflows for reminders
 
-- http://localhost:5000
+---
 
-Primary route groups:
+## 🏗️ Architecture Overview
 
-- /api/v1/auth
-- /api/v1/verify
-- /api/v1/user
-- /api/v1/appointments
-- /api/v1/patients
-- /api/v1/prescription
+```mermaid
+graph TD
+    subgraph "Frontend"
+        UI["React + Vite App"]
+    end
 
-## Production Readiness Notes
+    subgraph "Backend"
+        API["Node.js + Express API"]
+        Auth["JWT + Google OAuth"]
+    end
 
-- Rotate all secrets and credentials before deployment.
-- Use managed MongoDB and secure network rules.
-- Restrict CORS origins to deployed frontend domains.
-- Enable secure cookies behind HTTPS.
-- Add request logging, monitoring, and alerting.
+    subgraph "Database"
+        DB[("MongoDB + Mongoose")]
+    end
+
+    subgraph "Services"
+        Cloud["Cloudinary"]
+        Mail["Nodemailer"]
+        Cron["Cron Jobs"]
+    end
+
+    UI <--> API
+    API <--> DB
+    API --> Cloud
+    API --> Mail
+    API --> Cron
+    API --> Auth
+```
+
+---
+
+## 🛠️ Tech Stack
+
+### ⚡ Frontend
+
+* React 19
+* Vite
+* React Router
+* Axios
+* Tailwind CSS
+
+### 🔌 Backend
+
+* Node.js
+* Express.js
+* MongoDB + Mongoose
+* JWT Authentication (Cookies)
+* Passport Google OAuth
+* Nodemailer
+* Cloudinary
+* Node Cron
+
+---
+
+## 📂 Project Structure
+
+```bash
+CureLink/
+│
+├── frontend/      # React + Vite Client
+├── server/        # Express API Server
+└── README.md
+```
+
+---
+
+## 🚀 Getting Started
+
+### 📦 1. Clone Repository
+
+```bash
+git clone https://github.com/your-username/curelink.git
+cd curelink
+```
+
+---
+
+### 📥 2. Install Dependencies
+
+```bash
+# Frontend
+cd frontend
+npm install
+
+# Backend
+cd ../server
+npm install
+```
+
+---
+
+### ⚙️ 3. Environment Setup
+
+Create:
+
+```bash
+server/config/.env
+```
+
+```env
+MONGO_DB_URL=
+PORT=5000
+
+JWT_SECRET=
+JWT_RESET_SECRET=
+
+NODE_ENV=development
+
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_CALLBACK_URI=
+
+FRONTEND_URI=
+
+CLOUD_NAME=
+CLOUD_API_KEY=
+CLOUD_API_SECRET=
+
+USER=
+APP_PASSWORD=
+```
+
+> ⚠️ Never commit `.env` files
+
+---
+
+### ▶️ 4. Run Locally
+
+```bash
+# Backend
+cd server
+npm run dev
+
+# Frontend
+cd frontend
+npm run dev
+```
+
+---
+
+## 🌐 API Configuration
+
+* **Base URL:** `http://localhost:5000`
+* **Namespace:** `/api/v1`
+
+---
+
+## 📜 Scripts
+
+### Frontend
+
+```bash
+npm run dev       # Start dev server
+npm run build     # Production build
+npm run preview   # Preview build
+npm run lint      # Lint code
+```
+
+### Backend
+
+```bash
+npm run dev       # Run with nodemon
+```
+
+---
+
+## 🚀 Deployment Strategy
+
+* Deploy frontend & backend separately
+* Enable HTTPS (mandatory for auth cookies)
+* Configure secure CORS policies
+* Use:
+
+  * MongoDB Atlas (DB)
+  * Cloudinary (media)
+  * Render / VPS / Docker (hosting)
+
+### Recommended Additions
+
+* PM2 (process manager)
+* Logging (Winston / Pino)
+* Monitoring (Sentry)
+
+---
+
+## 🔐 Security Practices
+
+* HTTP-only secure cookies
+* JWT-based authentication
+* OAuth integration
+* Environment variable isolation
+* Credential rotation before production
+
+---
+
+## 📈 Future Enhancements
+
+* 👨‍⚕️ Role-based dashboards (Doctor/Admin/Patient)
+* 💬 Real-time chat & video consultations
+* 🤖 AI-based diagnosis assistant
+* 📊 Analytics & reporting dashboard
+* 📱 Mobile-first responsive upgrade
+
+---
