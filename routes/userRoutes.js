@@ -33,16 +33,18 @@ router.put("/profile", isAuthenticated, async (req, res) => {
                 message: "User not found",
             });
         }
-
+        
+        
         // Update user fields
         user.username = username || user.username;
         user.age = age || user.age;
         user.email = email || user.email;
         user.phone = phone || user.phone;
         user.address = address || user.address;
-        user.medicalHistory = medicalHistory || user.medicalHistory;
+        // user.medicalHistory = medicalHistory || user.medicalHistory;
         user.blood_group = bloodGroup || user.blood_group;
         user.gender = gender.toLowerCase() || user.gender;
+        console.log(user);
 
 
         // Save the updated user
